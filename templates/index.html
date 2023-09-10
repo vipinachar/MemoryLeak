@@ -1,0 +1,302 @@
+<html>
+   <head>
+  
+      <script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js"></script>
+
+
+      <script type="text/javascript" >
+
+         function exportToExcel(tableID, filename = ''){
+            var downloadurl;
+            var dataFileType = 'application/vnd.ms-excel';
+            var tableSelect = document.getElementById(tableID);
+            var tableHTMLData = tableSelect.outerHTML.replace(/ /g, '%20');
+            
+            // Specify file name
+            filename = filename?filename+'.xls':'export_excel_data.xls';
+            
+            // Create download link element
+            downloadurl = document.createElement("a");
+            
+            document.body.appendChild(downloadurl);
+            
+            if(navigator.msSaveOrOpenBlob){
+               var blob = new Blob(['\ufeff', tableHTMLData], {
+                     type: dataFileType
+               });
+               navigator.msSaveOrOpenBlob( blob, filename);
+            }else{
+               // Create a link to the file
+               downloadurl.href = 'data:' + dataFileType + ', ' + tableHTMLData;
+            
+               // Setting the file name
+               downloadurl.download = filename;
+               
+               //triggering the function
+               downloadurl.click();
+            }
+         }
+
+
+
+            function startTab() {
+               document.getElementById("defaultOpen").click();
+            }
+
+         function copytable(el) {
+             var urlField = document.getElementById(el)   
+             var range = document.createRange()
+             range.selectNode(urlField)
+             window.getSelection().removeAllRanges();
+             window.getSelection().addRange(range) 
+             document.execCommand('copy')
+         }
+
+         function openTest(evt, cityName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+               tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+               tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(cityName).style.display = "block";
+            evt.currentTarget.className += " active";
+            }
+
+            
+         
+         </script>
+      <style>
+
+         table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-left: 5px;
+            padding-right: 5px;
+
+         }
+         table.center {
+            margin-left: auto; 
+            margin-right: auto;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 0.9em;
+            font-family: sans-serif;
+            min-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            }
+         label {
+               font-size: large;
+               /* font-weight: bold */
+            }
+         .inline{
+            display: flex;
+            align-items: center;
+            line-height: 0;
+         }
+         
+      /* Style the tab */
+         .tab {
+         overflow: hidden;
+         border: 1px solid #ccc;
+         background-color: #f1f1f1;
+         }
+
+         /* Style the buttons inside the tab */
+         .tab button {
+         background-color: inherit;
+         float: left;
+         border: none;
+         outline: none;
+         cursor: pointer;
+         padding: 14px 16px;
+         transition: 0.3s;
+         font-size: 17px;
+         }
+
+         /* Change background color of buttons on hover */
+         .tab button:hover {
+         background-color: #ddd;
+         }
+
+         /* Create an active/current tablink class */
+         .tab button.active {
+         background-color: #ccc;
+         }
+
+         /* Style the tab content */
+         .tabcontent {
+         display: none;
+         padding: 6px 12px;
+         border: 1px solid #ccc;
+         border-top: none;
+         }
+
+         </style>
+   </head>
+   <body onLoad="startTab()">
+   
+      <div">
+         <h1>TAP Longevity</h1>
+         <form action="http://localhost:8088/memory-leak" method="post">
+         <label for="grafana_dashboard_url">Grafana    Dashboard url:</label>
+         <input type="text" id="grafana_dashboard_url" name="grafana_dashboard_url" size="80">
+         <label  for="From">From:</label>
+         <input type="text" id="From" name="From"  value="now-1d" size="40">
+         <label for="To">To:</label>
+         <input type="text" id="To" name="To" value="now" size="40"><br><br>
+         <label for="username">username:</label>
+         <input type="text" id="username" name="username" size="40">
+         <label for="password">password:</label>
+         <input type="password" id="password" name="password" size="40">
+         <button type="submit">Query</button> 
+         </form>
+
+         <h4>Grafana Dashboard URL : {{ DashboardURL }}</h4>
+         <h4>From : {{ DurationFrom }}</h4>
+         <h4>To : {{ DurationTo }}</h4>
+         <h4>Interval MS: {{ Interval }} </h4>
+         
+         <h4>{{ err_msg }} </h4>
+
+         <div class="tab">
+            <button class="tablinks" onclick="openTest(event, 'memoryspike')" id="defaultOpen">Memory Spikes</button>
+            <button class="tablinks" onclick="openTest(event, 'nodememoryusage')">Node Memory Utilization</button>
+            <button class="tablinks" onclick="openTest(event, 'nodecpuusage')">Node CPU Utilization</button>
+            <button class="tablinks" onclick="openTest(event, 'podrestarts')">Pod Restarts</button>
+            <button class="tablinks" onclick="openTest(event, '95percentile')">95 Percentile</button>
+          </div>
+
+         <div class="tabcontent" id="memoryspike">
+            <div class="inline">
+               <input type=button value="copy table" onClick="copytable('memory_spikes')" style="height:10%">
+               <input type=button value="Download" onClick="exportToExcel('memory_spikes', 'memory_spikes')" style="height:10%">
+               </div>
+               <table class="center sortable" id="memory_spikes">
+                  <tr>
+                     <th onclick="sortTable(0)">Namespace</th>
+                     <th onclick="sortTable(1)">Pod Name</th>
+                     <th onclick="sortTable(2)">Minimum MiB</th>
+                     <th onclick="sortTable(3)">Maximum MiB</th>
+                     <th onclick="sortTable(4)">Start MiB</th>
+                     <th onclick="sortTable(5)">End MiB</th>
+                     <th onclick="sortTable(6)">Average MiB</th>
+                     <th onclick="sortTable(7)">Prometheus/Grafana</th>
+                  </tr>
+                  {% for item in my_list %}
+                  <tr>
+                  <td>{{item[0]}}</td>
+                  <td>{{item[1]}}</td>
+                  <td>{{item[2]}}</td>
+                  <td>{{item[3]}}</td>
+                  <td>{{item[4]}}</td>
+                  <td>{{item[5]}}</td>
+                  <td>{{item[6]}}</td>
+                  <td><a href='{{item[7]}}'>{{item[7]}}</a></td>
+                  </tr>
+                  {% endfor %}
+               </table>
+            </div>
+
+      <div class="tabcontent" id="nodememoryusage">
+         <div class="inline">
+         <input type=button value="copy table" onClick="copytable('node_memory_utlization')" style="text-align: center;height: 10%;">
+         <input type=button value="Download" onClick="exportToExcel('node_memory_utlization','node_memory_utlization')" style="height:10%">
+         </div>
+         <table class="center sortable" id="node_memory_utlization">
+            <tr>
+               <th onclick="sortTable(0)">Node</th>
+               <th onclick="sortTable(1)">Max % </th>
+               <th onclick="sortTable(2)">Min % </th>
+               <th onclick="sortTable(3)">Avg % </th>
+            </tr>
+            {% for item in NodeMemoryUsage %}
+            <tr>
+            <td>{{item[0]}}</td>
+            <td>{{item[1]}}</td>
+            <td>{{item[2]}}</td>
+            <td>{{item[3]}}</td>
+            </tr>
+            {% endfor %}
+         </table>
+      </div>
+
+      <div class="tabcontent" id="nodecpuusage">
+         <div class="inline">
+         <input type=button value="copy table" onClick="copytable('node_cpu_utlization')" style="text-align: center;height: 10%;">
+         <input type=button value="Download" onClick="exportToExcel('node_cpu_utlization','node_cpu_utlization')" style="height:10%">
+         </div>
+         <table class="center sortable" id="node_cpu_utlization">
+            <tr>
+               <th onclick="sortTable(0)">Node</th>
+               <th onclick="sortTable(1)">Max % </th>
+               <th onclick="sortTable(2)">Min % </th>
+               <th onclick="sortTable(3)">Avg % </th>
+            </tr>
+            {% for item in NodeCpuUsage %}
+            <tr>
+            <td>{{item[0]}}</td>
+            <td>{{item[1]}}</td>
+            <td>{{item[2]}}</td>
+            <td>{{item[3]}}</td>
+            </tr>
+            {% endfor %}
+         </table>
+      </div>
+      
+      <div class="tabcontent" id="podrestarts">
+         <div class="inline">
+         <input type=button value="copy table" onClick="copytable('pod_restarts')" style="height:10%;">
+         <input type=button value="Download" onClick="exportToExcel('pod_restarts','pod_restarts')" style="height:10%">
+         </div>
+         <table class="center sortable" id="pod_restarts">
+            <tr>
+               <th onclick="sortTable(0)">Namespace</th>
+               <th onclick="sortTable(1)">Pod Name</th>
+               <th onclick="sortTable(2)">Restarts</th>
+               <th onclick="sortTable(3)">Loki/Grafana</th>
+            </tr>
+            {% for item in PodRestart %}
+            <tr>
+            <td>{{item[0]}}</td>
+            <td>{{item[1]}}</td>
+            <td>{{item[2]}}</td>
+            <td><a href='{{item[3]}}'>{{item[3]}}</a></td>
+            </tr>
+            {% endfor %}
+         </table>
+         </div>
+      </div>
+      
+      <div class="tabcontent" id="95percentile">
+         <div class="inline">
+         <input type=button value="copy table" onClick="copytable('pod_info')" style="height:10%">
+         <input type=button value="Download" onClick="exportToExcel('pod_info','pod_info')" style="height:10%">
+         </div>
+         <table class="center sortable" id="pod_info">
+            <tr>
+               <th onclick="sortTable(0)">Namespace</th>
+               <th onclick="sortTable(1)">Pod Name</th>
+               <th onclick="sortTable(2)">Maximum MiB</th>
+               <th onclick="sortTable(3)">Average MiB</th>
+               <th onclick="sortTable(4)">95 Percentile MiB</th>
+            </tr>
+            {% for item in pod_info %}
+            <tr>
+            <td>{{item[0]}}</td>
+            <td>{{item[1]}}</td>
+            <td>{{item[2]}}</td>
+            <td>{{item[3]}}</td>
+            <td>{{item[4]}}</td>
+            </tr>
+            {% endfor %}
+         </table>
+      </div>
+      </div>
+   </body>
+</html>
